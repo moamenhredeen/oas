@@ -1,0 +1,15 @@
+# exe
+oas
+
+# config
+config.toml
+
+# IDEs
+.idea
+.vscode
+
+# OS
+.DS_Store
+
+# Logs
+logs/
