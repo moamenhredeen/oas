@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/fatih/color"
 	"github.com/moamenhredeen/oas/internal/models"
 	"github.com/moamenhredeen/oas/internal/parser"
 	"github.com/moamenhredeen/oas/internal/tester"
@@ -19,6 +20,10 @@ var (
 	filter    string
 	tags      []string
 	verbose   bool
+
+	// Color helpers for output
+	green = color.New(color.FgGreen, color.Bold).SprintFunc()
+	red   = color.New(color.FgRed, color.Bold).SprintFunc()
 )
 
 // testCmd represents the test command
@@ -116,15 +121,17 @@ func filterOperations(operations []models.Operation, filterStr string, tagFilter
 func displayResults(summary models.TestSummary, verbose bool) {
 	fmt.Println("\n=== Test Results ===")
 	fmt.Printf("Total Tests: %d\n", summary.TotalTests)
-	fmt.Printf("Passed: %d\n", summary.Passed)
-	fmt.Printf("Failed: %d\n", summary.Failed)
+	fmt.Printf("Passed: %s\n", green(summary.Passed))
+	fmt.Printf("Failed: %s\n", red(summary.Failed))
 	fmt.Println()
 
 	if verbose {
 		for _, result := range summary.Results {
-			status := "✓ PASS"
-			if !result.Passed {
-				status = "✗ FAIL"
+			var status string
+			if result.Passed {
+				status = green("✓ PASS")
+			} else {
+				status = red("✗ FAIL")
 			}
 
 			fmt.Printf("%s %s %s\n", status, result.Method, result.Path)
@@ -136,12 +143,12 @@ func displayResults(summary models.TestSummary, verbose bool) {
 
 			if !result.Passed {
 				if result.Error != "" {
-					fmt.Printf("  Error: %s\n", result.Error)
+					fmt.Printf("  Error: %s\n", red(result.Error))
 				}
 				if len(result.ValidationErrors) > 0 {
 					fmt.Printf("  Validation Errors:\n")
 					for _, ve := range result.ValidationErrors {
-						fmt.Printf("    - %s: %s\n", ve.Field, ve.Message)
+						fmt.Printf("    - %s: %s\n", ve.Field, red(ve.Message))
 					}
 				}
 			}
@@ -150,13 +157,15 @@ func displayResults(summary models.TestSummary, verbose bool) {
 	} else {
 		// Simple output
 		for _, result := range summary.Results {
-			status := "PASS"
-			if !result.Passed {
-				status = "FAIL"
+			var status string
+			if result.Passed {
+				status = green("PASS")
+			} else {
+				status = red("FAIL")
 			}
 			fmt.Printf("%s %s %s", status, result.Method, result.Path)
 			if !result.Passed && result.Error != "" {
-				fmt.Printf(" - %s", result.Error)
+				fmt.Printf(" - %s", red(result.Error))
 			}
 			fmt.Println()
 		}
