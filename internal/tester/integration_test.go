@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/moamenhredeen/oas/internal/models"
 	"github.com/moamenhredeen/oas/internal/parser"
@@ -74,7 +75,7 @@ func TestIntegrationFullFlow(t *testing.T) {
 	}
 
 	// Create tester
-	testRunner := NewTester()
+	testRunner := NewTester(30 * time.Second)
 
 	// Test all operations
 	summary := testRunner.TestOperations(operations, p, nil)
@@ -116,7 +117,7 @@ func TestIntegrationSingleOperation(t *testing.T) {
 		ServerURL: server.URL,
 	}
 
-	testRunner := NewTester()
+	testRunner := NewTester(30 * time.Second)
 	result, err := testRunner.TestOperation(op, p)
 	if err != nil {
 		t.Fatalf("Test operation failed: %v", err)
@@ -150,7 +151,7 @@ func TestIntegrationPOSTOperation(t *testing.T) {
 		ServerURL: server.URL,
 	}
 
-	testRunner := NewTester()
+	testRunner := NewTester(30 * time.Second)
 	result, err := testRunner.TestOperation(op, p)
 	if err != nil {
 		t.Fatalf("Test operation failed: %v", err)
@@ -176,7 +177,7 @@ func TestIntegrationPathParameter(t *testing.T) {
 		ServerURL: server.URL,
 	}
 
-	testRunner := NewTester()
+	testRunner := NewTester(30 * time.Second)
 	result, err := testRunner.TestOperation(op, p)
 	if err != nil {
 		t.Fatalf("Test operation failed: %v", err)
@@ -208,7 +209,7 @@ func TestIntegrationValidationErrors(t *testing.T) {
 		ServerURL: server.URL,
 	}
 
-	testRunner := NewTester()
+	testRunner := NewTester(30 * time.Second)
 	result, err := testRunner.TestOperation(op, p)
 	if err != nil {
 		t.Fatalf("Test operation failed: %v", err)
@@ -255,7 +256,7 @@ func TestIntegrationWithPaginationAPI(t *testing.T) {
 		t.Fatalf("Failed to get operations: %v", err)
 	}
 
-	testRunner := NewTester()
+	testRunner := NewTester(30 * time.Second)
 	summary := testRunner.TestOperations(operations, p, nil)
 
 	if summary.TotalTests == 0 {

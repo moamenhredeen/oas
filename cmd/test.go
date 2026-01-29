@@ -13,16 +13,20 @@ import (
 	"github.com/fatih/color"
 	"github.com/mattn/go-isatty"
 	"github.com/moamenhredeen/oas/internal/models"
+	"github.com/moamenhredeen/oas/internal/output"
 	"github.com/moamenhredeen/oas/internal/parser"
 	"github.com/moamenhredeen/oas/internal/tester"
 	"github.com/spf13/cobra"
 )
 
 var (
-	serverURL string
-	filter    string
-	tags      []string
-	verbose   bool
+	serverURL    string
+	filter       string
+	tags         []string
+	verbose      bool
+	outputFormat string
+	outputFile   string
+	timeout      int
 
 	// Color helpers for output
 	green = color.New(color.FgGreen, color.Bold).SprintFunc()
@@ -80,7 +84,7 @@ var testCmd = &cobra.Command{
 		}
 
 		// Run tests with live output
-		testRunner := tester.NewTester()
+		testRunner := tester.NewTester(time.Duration(timeout) * time.Second)
 		var s *spinner.Spinner
 
 		// Create event handler for live output
@@ -136,6 +140,31 @@ var testCmd = &cobra.Command{
 		}
 
 		summary := testRunner.TestOperations(filteredOps, p, onEvent)
+
+		// Handle output format
+		if outputFormat != "" {
+			format, err := output.ParseFormat(outputFormat)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+				os.Exit(1)
+			}
+
+			if err := output.ExportTestSummary(summary, format, outputFile); err != nil {
+				fmt.Fprintf(os.Stderr, "Error exporting results: %v\n", err)
+				os.Exit(1)
+			}
+
+			// If writing to file, still show summary
+			if outputFile != "" {
+				fmt.Printf("\nResults exported to: %s\n", outputFile)
+				displayResults(summary)
+			}
+			// If writing to stdout, skip display (already output)
+			if summary.Failed > 0 {
+				os.Exit(1)
+			}
+			return
+		}
 
 		// Display summary
 		displayResults(summary)
@@ -197,4 +226,7 @@ func init() {
 	testCmd.Flags().StringVar(&filter, "filter", "", "Filter endpoints by path pattern or operation ID")
 	testCmd.Flags().StringSliceVar(&tags, "tags", []string{}, "Filter by OpenAPI tags (can be specified multiple times)")
 	testCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Show detailed output")
+	testCmd.Flags().IntVarP(&timeout, "timeout", "t", 30, "Request timeout in seconds")
+	testCmd.Flags().StringVarP(&outputFormat, "output", "o", "", "Output format: json, csv")
+	testCmd.Flags().StringVar(&outputFile, "output-file", "", "Write output to file (default: stdout)")
 }

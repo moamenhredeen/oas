@@ -39,13 +39,16 @@ type Tester struct {
 	client         *http.Client
 }
 
-// NewTester creates a new tester instance
-func NewTester() *Tester {
+// NewTester creates a new tester instance with configurable timeout
+func NewTester(timeout time.Duration) *Tester {
+	if timeout <= 0 {
+		timeout = 30 * time.Second
+	}
 	return &Tester{
 		requestBuilder: NewRequestBuilder(),
 		validator:      NewValidator(),
 		client: &http.Client{
-			Timeout: 30 * time.Second,
+			Timeout: timeout,
 		},
 	}
 }
