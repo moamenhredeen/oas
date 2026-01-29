@@ -29,11 +29,19 @@ func (v *Validator) ValidateResponse(resp *http.Response, opDetails *parser.Oper
 		return []models.ValidationError{{Field: "response", Message: "response is nil"}}, nil
 	}
 
+	statusCode := resp.StatusCode
+
+	// If no responses defined in spec, use HTTP semantics
 	if opDetails == nil || opDetails.Responses == nil {
+		if statusCode >= 400 {
+			errors = append(errors, models.ValidationError{
+				Field:   "status_code",
+				Message: fmt.Sprintf("HTTP error: %d (no responses defined in spec, using HTTP semantics)", statusCode),
+			})
+		}
 		return errors, nil
 	}
 
-	statusCode := resp.StatusCode
 	statusCodeStr := fmt.Sprintf("%d", statusCode)
 
 	// Find matching response definition
@@ -70,10 +78,19 @@ func (v *Validator) ValidateResponse(resp *http.Response, opDetails *parser.Oper
 	}
 
 	if !found {
-		errors = append(errors, models.ValidationError{
-			Field:   "status_code",
-			Message: fmt.Sprintf("unexpected status code %d, not defined in OpenAPI spec", statusCode),
-		})
+		// Not defined in spec - use HTTP semantics
+		if statusCode >= 400 {
+			errors = append(errors, models.ValidationError{
+				Field:   "status_code",
+				Message: fmt.Sprintf("unexpected status code %d, not defined in OpenAPI spec (HTTP error)", statusCode),
+			})
+		} else if statusCode < 200 {
+			errors = append(errors, models.ValidationError{
+				Field:   "status_code",
+				Message: fmt.Sprintf("unexpected status code %d, not defined in OpenAPI spec (informational)", statusCode),
+			})
+		}
+		// 2xx and 3xx without definition = pass (assume success/redirect is OK)
 		return errors, nil
 	}
 

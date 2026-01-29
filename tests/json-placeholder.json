@@ -42,6 +42,11 @@
                         "application/json": {
                             "schema": {
                                 "$ref": "#/components/schemas/Post"
+                            },
+                            "example": {
+                                "title": "foo",
+                                "body": "bar",
+                                "userId": 1
                             }
                         }
                     }
