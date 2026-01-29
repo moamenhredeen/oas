@@ -1,0 +1,111 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "version": "1.0.0",
+        "title": "JSON Placeholder API",
+        "license": {
+            "name": "MIT",
+            "url": "https://opensource.org/licenses/MIT"
+        }
+    },
+    "servers": [
+        {
+            "url": "https://jsonplaceholder.typicode.com"
+        }
+    ],
+    "paths": {
+        "/posts": {
+            "get": {
+                "summary": "List all posts",
+                "operationId": "listPosts",
+                "tags": ["posts"],
+                "responses": {
+                    "200": {
+                        "description": "A list of posts",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Posts"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create a post",
+                "operationId": "createPost",
+                "tags": ["posts"],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Post"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/posts/{postId}": {
+            "get": {
+                "summary": "Info for a specific post",
+                "operationId": "showPostById",
+                "tags": ["posts"],
+                "parameters": [
+                    {
+                        "name": "postId",
+                        "in": "path",
+                        "required": true,
+                        "description": "The id of the post to retrieve",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "example": 1
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Expected response to a valid request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Post"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "Posts": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/Post"
+                }
+            },
+            "Post": {
+                "type": "object",
+                "required": ["id", "title", "body", "userId"],
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "body": {
+                        "type": "string"
+                    },
+                    "userId": {
+                        "type": "integer"
+                    }
+                }
+            }
+        }
+    }
+}

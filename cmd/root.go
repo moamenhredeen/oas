@@ -4,7 +4,6 @@ Copyright © 2026 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"log"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -26,9 +25,7 @@ func Execute() {
 		viper.SetConfigName("config")
 		viper.SetConfigType("toml")
 		viper.AddConfigPath(".")
-		if err := viper.ReadInConfig(); err != nil {
-			log.Fatalf("Error reading config file: %v", err)
-		}
+		viper.ReadInConfig()
 	})
 	err := rootCmd.Execute()
 	if err != nil {
@@ -37,5 +34,5 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// Removed placeholder toggle flag
 }

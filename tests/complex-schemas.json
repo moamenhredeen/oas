@@ -1,0 +1,222 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "version": "1.0.0",
+        "title": "Complex Schemas API",
+        "description": "API with complex nested schemas, arrays, and references"
+    },
+    "servers": [
+        {
+            "url": "http://api.example.com/v1"
+        }
+    ],
+    "paths": {
+        "/users": {
+            "post": {
+                "operationId": "createUser",
+                "summary": "Create a new user",
+                "tags": ["users"],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/User"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "User created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/User"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "get": {
+                "operationId": "listUsers",
+                "summary": "List all users",
+                "tags": ["users"],
+                "responses": {
+                    "200": {
+                        "description": "List of users",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/User"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{userId}/orders": {
+            "get": {
+                "operationId": "getUserOrders",
+                "summary": "Get user orders",
+                "tags": ["users", "orders"],
+                "parameters": [
+                    {
+                        "name": "userId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User orders",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "user": {
+                                            "$ref": "#/components/schemas/User"
+                                        },
+                                        "orders": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Order"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "User": {
+                "type": "object",
+                "required": ["id", "name", "email"],
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 100
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email"
+                    },
+                    "address": {
+                        "$ref": "#/components/schemas/Address"
+                    },
+                    "tags": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "Address": {
+                "type": "object",
+                "required": ["street", "city", "zipCode"],
+                "properties": {
+                    "street": {
+                        "type": "string"
+                    },
+                    "city": {
+                        "type": "string"
+                    },
+                    "state": {
+                        "type": "string"
+                    },
+                    "zipCode": {
+                        "type": "string",
+                        "pattern": "^[0-9]{5}(-[0-9]{4})?$"
+                    },
+                    "country": {
+                        "type": "string",
+                        "enum": ["US", "CA", "UK", "DE", "FR"]
+                    }
+                }
+            },
+            "Order": {
+                "type": "object",
+                "required": ["id", "items", "total"],
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/OrderItem"
+                        },
+                        "minItems": 1
+                    },
+                    "total": {
+                        "type": "number",
+                        "format": "double",
+                        "minimum": 0
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "pending",
+                            "processing",
+                            "shipped",
+                            "delivered",
+                            "cancelled"
+                        ]
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "OrderItem": {
+                "type": "object",
+                "required": ["productId", "quantity", "price"],
+                "properties": {
+                    "productId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "quantity": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 100
+                    },
+                    "price": {
+                        "type": "number",
+                        "format": "double",
+                        "minimum": 0
+                    }
+                }
+            }
+        }
+    }
+}

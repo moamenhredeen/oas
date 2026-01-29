@@ -1,0 +1,108 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "version": "1.0.0",
+        "title": "Error Cases API",
+        "description": "API with various error response scenarios"
+    },
+    "servers": [
+        {
+            "url": "http://api.example.com/v1"
+        }
+    ],
+    "paths": {
+        "/errors/400": {
+            "get": {
+                "operationId": "getBadRequest",
+                "summary": "Returns 400 Bad Request",
+                "tags": ["errors"],
+                "responses": {
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "required": ["code", "message"],
+                                    "properties": {
+                                        "code": {
+                                            "type": "integer"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "details": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/errors/404": {
+            "get": {
+                "operationId": "getNotFound",
+                "summary": "Returns 404 Not Found",
+                "tags": ["errors"],
+                "responses": {
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/errors/500": {
+            "get": {
+                "operationId": "getServerError",
+                "summary": "Returns 500 Internal Server Error",
+                "tags": ["errors"],
+                "responses": {
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "Unexpected error"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "Error": {
+                "type": "object",
+                "required": ["code", "message"],
+                "properties": {
+                    "code": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "message": {
+                        "type": "string"
+                    }
+                }
+            }
+        }
+    }
+}
+
