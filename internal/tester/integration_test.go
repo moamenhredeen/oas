@@ -77,7 +77,7 @@ func TestIntegrationFullFlow(t *testing.T) {
 	testRunner := NewTester()
 
 	// Test all operations
-	summary := testRunner.TestOperations(operations, p)
+	summary := testRunner.TestOperations(operations, p, nil)
 
 	// Verify results
 	if summary.TotalTests == 0 {
@@ -256,7 +256,7 @@ func TestIntegrationWithPaginationAPI(t *testing.T) {
 	}
 
 	testRunner := NewTester()
-	summary := testRunner.TestOperations(operations, p)
+	summary := testRunner.TestOperations(operations, p, nil)
 
 	if summary.TotalTests == 0 {
 		t.Error("Expected at least one test")
@@ -272,4 +272,3 @@ func TestIntegrationWithPaginationAPI(t *testing.T) {
 		}
 	}
 }
-

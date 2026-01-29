@@ -10,11 +10,33 @@ import (
 	"github.com/moamenhredeen/oas/internal/parser"
 )
 
+// EventType represents the type of test event
+type EventType int
+
+const (
+	// EventStarting indicates a test is about to start
+	EventStarting EventType = iota
+	// EventCompleted indicates a test has completed
+	EventCompleted
+)
+
+// TestEvent represents an event during test execution
+type TestEvent struct {
+	Type      EventType
+	Operation models.Operation
+	Result    *models.TestResult // nil for Starting events
+	Index     int                // current test index (0-based)
+	Total     int                // total number of tests
+}
+
+// OnTestEvent is a callback function for test events
+type OnTestEvent func(event TestEvent)
+
 // Tester executes API tests based on OpenAPI specifications
 type Tester struct {
 	requestBuilder *RequestBuilder
-	validator     *Validator
-	client        *http.Client
+	validator      *Validator
+	client         *http.Client
 }
 
 // NewTester creates a new tester instance
@@ -87,21 +109,31 @@ func (t *Tester) TestOperation(op models.Operation, parser *parser.Parser) (mode
 	return result, nil
 }
 
-// TestOperations tests multiple operations
-func (t *Tester) TestOperations(operations []models.Operation, parser *parser.Parser) models.TestSummary {
+// TestOperations tests multiple operations with optional live event reporting
+func (t *Tester) TestOperations(operations []models.Operation, parser *parser.Parser, onEvent OnTestEvent) models.TestSummary {
 	summary := models.TestSummary{
 		Results: make([]models.TestResult, 0, len(operations)),
 	}
+	total := len(operations)
 
-	for _, op := range operations {
+	for i, op := range operations {
+		// Report: test is starting
+		if onEvent != nil {
+			onEvent(TestEvent{Type: EventStarting, Operation: op, Index: i, Total: total})
+		}
+
 		result, err := t.TestOperation(op, parser)
 		if err != nil {
 			result.Error = fmt.Sprintf("test execution error: %v", err)
 			result.Passed = false
 		}
 		summary.AddResult(result)
+
+		// Report: test completed
+		if onEvent != nil {
+			onEvent(TestEvent{Type: EventCompleted, Operation: op, Result: &result, Index: i, Total: total})
+		}
 	}
 
 	return summary
 }
-

@@ -7,8 +7,11 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
+	"github.com/briandowns/spinner"
 	"github.com/fatih/color"
+	"github.com/mattn/go-isatty"
 	"github.com/moamenhredeen/oas/internal/models"
 	"github.com/moamenhredeen/oas/internal/parser"
 	"github.com/moamenhredeen/oas/internal/tester"
@@ -24,6 +27,9 @@ var (
 	// Color helpers for output
 	green = color.New(color.FgGreen, color.Bold).SprintFunc()
 	red   = color.New(color.FgRed, color.Bold).SprintFunc()
+
+	// Check if stdout is a terminal
+	isTTY = isatty.IsTerminal(os.Stdout.Fd()) || isatty.IsCygwinTerminal(os.Stdout.Fd())
 )
 
 // testCmd represents the test command
@@ -73,12 +79,66 @@ var testCmd = &cobra.Command{
 			os.Exit(0)
 		}
 
-		// Run tests
+		// Run tests with live output
 		testRunner := tester.NewTester()
-		summary := testRunner.TestOperations(filteredOps, p)
+		var s *spinner.Spinner
 
-		// Display results
-		displayResults(summary, verbose)
+		// Create event handler for live output
+		onEvent := func(event tester.TestEvent) {
+			switch event.Type {
+			case tester.EventStarting:
+				if isTTY {
+					// Start spinner for TTY
+					s = spinner.New(spinner.CharSets[14], 100*time.Millisecond)
+					s.Suffix = fmt.Sprintf(" [%d/%d] Running %s %s...",
+						event.Index+1, event.Total, event.Operation.Method, event.Operation.Path)
+					s.Start()
+				} else {
+					// Simple output for non-TTY
+					fmt.Printf("[%d/%d] Running %s %s...\n",
+						event.Index+1, event.Total, event.Operation.Method, event.Operation.Path)
+				}
+			case tester.EventCompleted:
+				if isTTY && s != nil {
+					s.Stop()
+				}
+
+				result := event.Result
+				prefix := fmt.Sprintf("[%d/%d]", event.Index+1, event.Total)
+
+				if result.Passed {
+					fmt.Printf("%s %s %s %s\n", prefix, green("✓ PASS"), result.Method, result.Path)
+				} else {
+					fmt.Printf("%s %s %s %s\n", prefix, red("✗ FAIL"), result.Method, result.Path)
+				}
+
+				// Verbose output: show details inline
+				if verbose {
+					if result.OperationID != "" {
+						fmt.Printf("    Operation ID: %s\n", result.OperationID)
+					}
+					fmt.Printf("    Status Code: %d\n", result.StatusCode)
+					fmt.Printf("    Response Time: %v\n", result.ResponseTime)
+
+					if !result.Passed {
+						if result.Error != "" {
+							fmt.Printf("    Error: %s\n", red(result.Error))
+						}
+						if len(result.ValidationErrors) > 0 {
+							fmt.Printf("    Validation Errors:\n")
+							for _, ve := range result.ValidationErrors {
+								fmt.Printf("      - %s: %s\n", ve.Field, red(ve.Message))
+							}
+						}
+					}
+				}
+			}
+		}
+
+		summary := testRunner.TestOperations(filteredOps, p, onEvent)
+
+		// Display summary
+		displayResults(summary)
 	},
 }
 
@@ -118,58 +178,11 @@ func filterOperations(operations []models.Operation, filterStr string, tagFilter
 	return filtered
 }
 
-func displayResults(summary models.TestSummary, verbose bool) {
-	fmt.Println("\n=== Test Results ===")
+func displayResults(summary models.TestSummary) {
+	fmt.Println("\n=== Test Summary ===")
 	fmt.Printf("Total Tests: %d\n", summary.TotalTests)
 	fmt.Printf("Passed: %s\n", green(summary.Passed))
 	fmt.Printf("Failed: %s\n", red(summary.Failed))
-	fmt.Println()
-
-	if verbose {
-		for _, result := range summary.Results {
-			var status string
-			if result.Passed {
-				status = green("✓ PASS")
-			} else {
-				status = red("✗ FAIL")
-			}
-
-			fmt.Printf("%s %s %s\n", status, result.Method, result.Path)
-			if result.OperationID != "" {
-				fmt.Printf("  Operation ID: %s\n", result.OperationID)
-			}
-			fmt.Printf("  Status Code: %d\n", result.StatusCode)
-			fmt.Printf("  Response Time: %v\n", result.ResponseTime)
-
-			if !result.Passed {
-				if result.Error != "" {
-					fmt.Printf("  Error: %s\n", red(result.Error))
-				}
-				if len(result.ValidationErrors) > 0 {
-					fmt.Printf("  Validation Errors:\n")
-					for _, ve := range result.ValidationErrors {
-						fmt.Printf("    - %s: %s\n", ve.Field, red(ve.Message))
-					}
-				}
-			}
-			fmt.Println()
-		}
-	} else {
-		// Simple output
-		for _, result := range summary.Results {
-			var status string
-			if result.Passed {
-				status = green("PASS")
-			} else {
-				status = red("FAIL")
-			}
-			fmt.Printf("%s %s %s", status, result.Method, result.Path)
-			if !result.Passed && result.Error != "" {
-				fmt.Printf(" - %s", red(result.Error))
-			}
-			fmt.Println()
-		}
-	}
 
 	// Exit with error code if any tests failed
 	if summary.Failed > 0 {
